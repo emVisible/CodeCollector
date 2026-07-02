@@ -4,16 +4,20 @@ Collect project code files into a single output for AI assistants.
 
 ## Installation
 
+### pipx (recommended)
+
 ```bash
-pip install codecollector
+brew install pipx
+pipx ensurepath
+pipx install codecollector
 ```
 
-Or from source:
+### From source
 
 ```bash
 git clone https://github.com/yourusername/codecollector.git
 cd codecollector
-pip install -e .
+pipx install -e .
 ```
 
 ## Usage
@@ -40,17 +44,17 @@ collect . -o output.txt
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `path` | Directory to collect from (default: interactive mode) |
-| `-n, --non-recursive` | Only current directory, skip subdirectories |
-| `-o, --output` | Output filename (default: code_collection.txt) |
-| `-f, --format` | Output format: `detailed`, `markdown`, `simple` |
-| `-i, --interactive` | Force interactive mode |
-| `--config` | Path to config file |
-| `--init-config` | Generate default config at `~/.config/codecollector/config.json` |
-| `-v, --version` | Show version |
-| `-h, --help` | Show help |
+| Option                | Description                                                      |
+| --------------------- | ---------------------------------------------------------------- |
+| `path`                | Directory to collect from (default: interactive mode)            |
+| `-n, --non-recursive` | Only current directory, skip subdirectories                      |
+| `-o, --output`        | Output filename (default: code_collection.txt)                   |
+| `-f, --format`        | Output format: `detailed`, `markdown`, `simple`                  |
+| `-i, --interactive`   | Force interactive mode                                           |
+| `--config`            | Path to config file                                              |
+| `--init-config`       | Generate default config at `~/.config/codecollector/config.json` |
+| `-v, --version`       | Show version                                                     |
+| `-h, --help`          | Show help                                                        |
 
 ## Configuration
 
@@ -72,14 +76,7 @@ Edit `~/.config/codecollector/config.json`:
     "dist",
     "build"
   ],
-  "include_extensions": [
-    ".py",
-    ".js",
-    ".ts",
-    ".go",
-    ".rs",
-    ".java"
-  ],
+  "include_extensions": [".py", ".js", ".ts", ".go", ".rs", ".java"],
   "max_file_size_mb": 5.0,
   "output_format": "detailed"
 }
@@ -87,13 +84,17 @@ Edit `~/.config/codecollector/config.json`:
 
 ## Output Formats
 
-- **detailed** — Full separators, line counts, and file sizes
-- **markdown** — Fenced code blocks with language hints
-- **simple** — Filename headers with raw content
+| Format     | Description                                  |
+| ---------- | -------------------------------------------- |
+| `detailed` | Full separators, line counts, and file sizes |
+| `markdown` | Fenced code blocks with language hints       |
+| `simple`   | Filename headers with raw content            |
 
 ## Requirements
 
 - Python 3.8+
-- rich >= 13.0.0
-- questionary >= 2.0.0
+- pipx (for installation)
 
+```
+
+```
