@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "codecollector"
-version = "1.0.0"
+version = "1.2.0"
 description = "Collect project code files into a single output for AI assistants"
 readme = "README.md"
 license = {text = "MIT"}

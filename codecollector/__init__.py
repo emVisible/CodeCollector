@@ -1,6 +1,6 @@
 """CodeCollector - Collect project code files for AI assistants."""
 
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 __author__ = "thawn"
 __license__ = "MIT"
 

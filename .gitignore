@@ -216,7 +216,12 @@ $RECYCLE.BIN/
 # --- Project Specific ---
 # 输出文件（可以根据需要调整）
 code_collection.txt
+code_collection.md
+code_collection*.txt
+code_collection*.md
+code_collection*.manifest.json
 *.collection.txt
+*.collection.md
 output/
 collected_code/
 

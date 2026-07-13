@@ -37,7 +37,7 @@ class InteractiveSelector:
 
     @staticmethod
     def select_directory(start_path: Optional[Path] = None) -> Optional[Path]:
-        """Interactively select a directory."""
+        """Interactively select a directory to collect."""
         if start_path is None:
             start_path = Path.cwd()
 
@@ -48,7 +48,7 @@ class InteractiveSelector:
 
             console.print()
             console.print(Panel.fit(
-                "[bold cyan]CodeCollector[/bold cyan] [dim]- Code Collection Tool[/dim]",
+                "[bold cyan]CodeCollector[/bold cyan] [dim]- Select directory, press Enter to collect[/dim]",
                 border_style="cyan",
             ))
 
@@ -60,51 +60,28 @@ class InteractiveSelector:
 
             try:
                 items = sorted(current_path.iterdir())
-                dirs = [item for item in items if item.is_dir()]
-                files = [item for item in items if item.is_file()]
+                dirs = [item for item in items if item.is_dir() and not item.name.startswith(".")]
 
                 choices = []
 
-                choices.append(questionary.Separator("─" * 30 + " Navigation " + "─" * 30))
+                choices.append(questionary.Separator("─" * 28 + " Collect " + "─" * 28))
+                choices.append({
+                    "name": "  ✅  Collect this directory",
+                    "value": ".",
+                })
+
+                choices.append(questionary.Separator("─" * 28 + " Navigate " + "─" * 28))
                 if current_path != current_path.parent:
-                    choices.append({"name": "  .. (parent directory)", "value": ".."})
-                choices.append({"name": "  . (select current directory)", "value": "."})
+                    choices.append({"name": "  ⬆️  .. (parent directory)", "value": ".."})
 
-                if dirs:
-                    choices.append(questionary.Separator("─" * 30 + " Subdirectories " + "─" * 30))
-                    for d in dirs:
-                        name = d.name
-                        if name.startswith("."):
-                            continue
-
-                        icon = "📁"
-                        if "src" in name.lower():
-                            icon = "💻"
-                        elif "test" in name.lower():
-                            icon = "🧪"
-                        elif "doc" in name.lower():
-                            icon = "📚"
-                        elif "config" in name.lower():
-                            icon = "⚙️"
-
-                        choices.append({"name": f"  {icon}  {name}/", "value": name})
-
-                if files:
-                    choices.append(questionary.Separator("─" * 30 + " File Stats " + "─" * 30))
-                    code_files = [f for f in files if f.suffix in {
-                        ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".go", ".rs"
-                    }]
-                    choices.append({
-                        "name": f"  Total: {len(files)} files ({len(code_files)} code files)",
-                        "value": None,
-                        "disabled": True,
-                    })
+                for d in dirs:
+                    choices.append({"name": f"  📁  {d.name}/", "value": d.name})
 
                 choices.append(questionary.Separator("─" * 60))
                 choices.append({"name": "  Exit", "value": "quit"})
 
                 selected = questionary.select(
-                    "Select directory:",
+                    "Select:",
                     choices=choices,
                     style=custom_style,
                     use_indicator=True,
@@ -136,30 +113,3 @@ class InteractiveSelector:
             except KeyboardInterrupt:
                 console.print("\n\n[yellow]Cancelled[/yellow]")
                 return None
-
-    @staticmethod
-    def select_mode() -> Optional[str]:
-        """Select collection mode interactively."""
-        os.system("clear" if os.name != "nt" else "cls")
-
-        console.print()
-        console.print(Panel.fit(
-            "[bold cyan]Select Collection Mode[/bold cyan]",
-            border_style="cyan",
-        ))
-
-        mode = questionary.select(
-            "Select mode:",
-            choices=[
-                questionary.Separator("─" * 40),
-                {"name": "  Recursive - collect all subdirectories", "value": "recursive"},
-                {"name": "  Non-recursive - current directory only", "value": "non_recursive"},
-                questionary.Separator("─" * 40),
-                {"name": "  Exit", "value": "quit"},
-            ],
-            style=custom_style,
-            qmark="👉",
-            pointer="❯",
-        ).ask()
-
-        return mode if mode != "quit" else None
