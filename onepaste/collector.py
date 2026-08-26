@@ -150,16 +150,28 @@ class FileCollector:
 
     def _path_in_excluded_dir(self, file_path: Path) -> bool:
         try:
-            parts = file_path.resolve().relative_to(self.config.root_path.resolve()).parts
+            rel = file_path.relative_to(self.config.root_path)
         except ValueError:
-            parts = file_path.parts
-        return any(part in self.config.all_exclude_dirs for part in parts[:-1])
+            try:
+                rel = file_path.resolve().relative_to(self.config.root_path.resolve())
+            except ValueError:
+                return False
+        return any(part in self.config.all_exclude_dirs for part in rel.parts[:-1])
 
     def _should_exclude_dir(self, dir_path: Path) -> bool:
-        """Check if a directory should be excluded."""
-        for part in dir_path.parts:
-            if part in self.config.all_exclude_dirs:
-                return True
+        """Check if a directory should be excluded.
+
+        Exclusion names match path segments *relative to the collection root*
+        only — never absolute ancestors (e.g. a /tmp-based temp dir must not
+        trip the "tmp" rule).
+        """
+        try:
+            segments = dir_path.relative_to(self.config.root_path).parts
+        except ValueError:
+            segments = (dir_path.name,)
+
+        if any(part in self.config.all_exclude_dirs for part in segments):
+            return True
 
         if self._git_files is None and self._gitignore:
             if self._gitignore.is_ignored(dir_path, is_dir=True):

@@ -92,6 +92,28 @@ class TestGitignoreFiltering:
         assert "secret_key.txt" in names
 
 
+class TestExcludesAreRootScoped:
+    def test_suspicious_ancestor_names_do_not_prune(self, tmp_path: Path):
+        """Regression: exclusion names must match segments relative to the
+        collection root, never absolute ancestors (CI runs under /tmp)."""
+        root = tmp_path / "tmp" / "build" / "env" / "proj"
+        (root / "src").mkdir(parents=True)
+        (root / "a.py").write_text("x = 1\n")
+        (root / "src" / "b.py").write_text("y = 2\n")
+        (root / "build").mkdir()  # a REAL excluded dir inside the project
+        (root / "build" / "junk.py").write_text("junk\n")
+
+        names = _rel_names(_collect(root), root)
+
+        assert "a.py" in names
+        assert "src/b.py" in names
+        assert not any(n.startswith("build/") for n in names)
+
+    def test_real_excluded_dirs_inside_root_still_pruned(self, project_dir: Path):
+        fc = _collect(project_dir)
+        assert all("node_modules" not in fp.parts for fp in fc.collected_files)
+
+
 class TestGlobPatterns:
     def test_include_overrides_extension_whitelist(self, project_dir: Path):
         names = _rel_names(
