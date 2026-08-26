@@ -1,7 +1,7 @@
 """OnePaste - Collect project code files for AI assistants."""
 
 __version__ = "1.3.2"
-__author__ = "thawn"
+__author__ = "emVisible"
 __license__ = "MIT"
 
 from onepaste.collector import FileCollector

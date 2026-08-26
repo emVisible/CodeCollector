@@ -395,23 +395,23 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
-  collect                          Select directory interactively, then collect
-  collect .                        Collect current directory (.gitignore on inside git repos)
-  collect . --no-gitignore         Include gitignored files
-  collect /path/to/project         Collect specific directory
-  collect . -n                     Non-recursive (current directory only)
-  collect . -o output.md           Custom output filename
-  collect . --max-output-size 5    Split output when exceeding 5MB per file
-  collect . --stdout | llm "..."   Pipe collection straight into another tool
-  collect . --dry-run              Preview without writing output
-  collect . --force                Overwrite existing output files
-  collect . -d ./output            Write output to specific directory
-  collect . --exclude vendor       Extra directory to exclude
-  collect . --include "src/**"     Only include files matching glob (repeatable)
-  collect . --exclude-pattern "*_test.go"   Skip files matching glob (repeatable)
-  collect --init-config            Initialize default configuration
-  collect --uninstall              Uninstall onepaste (pipx/pip)
-  collect --uninstall --purge-config  Uninstall and remove ~/.config/onepaste
+  onepaste                          Select directory interactively, then collect
+  onepaste .                        Collect current directory (.gitignore on inside git repos)
+  onepaste . --no-gitignore         Include gitignored files
+  onepaste /path/to/project         Collect specific directory
+  onepaste . -n                     Non-recursive (current directory only)
+  onepaste . -o output.md           Custom output filename
+  onepaste . --max-output-size 5    Split output when exceeding 5MB per file
+  onepaste . --stdout | llm "..."   Pipe collection straight into another tool
+  onepaste . --dry-run              Preview without writing output
+  onepaste . --force                Overwrite existing output files
+  onepaste . -d ./output            Write output to specific directory
+  onepaste . --exclude vendor       Extra directory to exclude
+  onepaste . --include "src/**"     Only include files matching glob (repeatable)
+  onepaste . --exclude-pattern "*_test.go"   Skip files matching glob (repeatable)
+  onepaste --init-config            Initialize default configuration
+  onepaste --uninstall              Uninstall onepaste (pipx/pip)
+  onepaste --uninstall --purge-config  Uninstall and remove ~/.config/onepaste
 
 Version: {__version__}
         """,

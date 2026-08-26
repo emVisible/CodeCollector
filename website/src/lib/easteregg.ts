@@ -1,6 +1,6 @@
-/* easter egg: type "collect" anywhere */
+/* easter egg: type "onepaste" anywhere */
 
-const TARGET = "collect";
+const TARGET = "onepaste";
 
 export function initEasterEgg(): void {
   let buffer = "";

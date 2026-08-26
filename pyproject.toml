@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/emVisible/codecollector"
-Repository = "https://github.com/emVisible/codecollector.git"
-Issues = "https://github.com/emVisible/codecollector/issues"
+Homepage = "https://github.com/emVisible/onepaste"
+Repository = "https://github.com/emVisible/onepaste.git"
+Issues = "https://github.com/emVisible/onepaste/issues"
 
 [project.scripts]
 onepaste = "onepaste.cli:main"

@@ -12,7 +12,7 @@ const METHODS: Record<string, Method> = {
   pipx: { cmd: "pipx install onepaste", capKey: "cap.pipx" },
   tokens: { cmd: 'pipx install "onepaste[tokens]"', capKey: "cap.tokens" },
   source: {
-    cmd: "git clone https://github.com/emVisible/codecollector\ncd codecollector\npipx install -e .",
+    cmd: "git clone https://github.com/emVisible/onepaste\ncd onepaste\npipx install -e .",
     capKey: "cap.source",
   },
 };

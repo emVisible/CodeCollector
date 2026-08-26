@@ -1,6 +1,6 @@
 # Publishing to PyPI
 
-Package name: **onepaste** (import name stays `onepaste`, command stays `onepaste`).
+Package name: **onepaste** — the package dir, Python import and CLI command are all `onepaste`.
 
 ## One-time setup (manual first release)
 
@@ -19,7 +19,7 @@ Package name: **onepaste** (import name stays `onepaste`, command stays `onepast
 
    ```bash
    pipx install onepaste
-   onepaste --version   # OnePaste v1.3.0
+   onepaste --version   # OnePaste vX.Y.Z
    ```
 
 ## Subsequent releases (GitHub Actions, zero tokens)
@@ -39,4 +39,6 @@ The workflow runs tests, builds, twine-checks, then publishes.
 
 1. `pyproject.toml` → `version`
 2. `onepaste/__init__.py` → `__version__` (a test enforces both match)
-3. Commit + GitHub Release with tag `vX.Y.Z`
+3. `website/index.html` → three spots: summary *Version* row, the
+   `./vX.Y.Z.diff` heading, and the footer manifest `"version"`
+4. Commit + GitHub Release with tag `vX.Y.Z`
