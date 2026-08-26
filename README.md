@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/onepaste)](https://pypi.org/project/onepaste/)
 [![Python](https://img.shields.io/pypi/pyversions/onepaste)](https://pypi.org/project/onepaste/)
 [![License](https://img.shields.io/pypi/l/onepaste)](LICENSE)
+[![Publish](https://github.com/emVisible/onepaste/actions/workflows/publish.yml/badge.svg)](https://github.com/emVisible/onepaste/actions/workflows/publish.yml)
 
 Collect project code into LLM-ready Markdown. Select a directory, press Enter, copy and paste.
 

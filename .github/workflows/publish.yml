@@ -35,3 +35,8 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Primary path: OIDC trusted publishing (no secret needed).
+          # Optional fallback: add a repo secret named PYPI_API_TOKEN and it
+          # takes precedence automatically; leave it unset for pure OIDC.
+          password: ${{ secrets.PYPI_API_TOKEN }}
