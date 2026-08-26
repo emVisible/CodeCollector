@@ -13,13 +13,13 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+/build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -52,7 +52,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
+/cover/
 
 # Translations
 *.mo
@@ -76,7 +76,7 @@ docs/_build/
 
 # PyBuilder
 .pybuilder/
-target/
+/target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -111,9 +111,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
-venv/
-ENV/
+/env/
+/venv/
+/ENV/
 env.bak/
 venv.bak/
 
@@ -225,12 +225,12 @@ code_collection*.md
 code_collection*.manifest.json
 *.collection.txt
 *.collection.md
-output/
-collected_code/
+/output/
+/collected_code/
 
 # 临时文件
-tmp/
-temp/
+/tmp/
+/temp/
 *.tmp
 *.temp
 
@@ -251,7 +251,7 @@ config.local.json
 
 # 日志文件
 *.log
-logs/
+/logs/
 
 # --- Environment ---
 # Conda
@@ -262,10 +262,10 @@ Anaconda*/
 
 # NPM (如果项目中有前端部分)
 node_modules/
-package-lock.json
-yarn.lock
+/package-lock.json/
+/yarn.lock/
 .npm
-.npmrc
+/.npmrc/
 
 # --- Docker ---
 # (如果将来添加 Docker 支持)
@@ -274,7 +274,7 @@ docker-compose.override.yml
 
 # --- Documentation ---
 # 生成的文档
-site/
+/site/
 docs/_build/
 
 # --- Security ---
@@ -302,8 +302,8 @@ collected_*.txt
 !collected_example.txt
 
 # 测试输出
-test_output/
-test_results/
+/test_output/
+/test_results/
 
 # 性能分析
 *.prof
@@ -313,3 +313,5 @@ test_results/
 *.db
 *.sqlite
 *.sqlite3
+# Website lockfile MUST be tracked (reproducible Vercel builds)
+!website/package-lock.json
