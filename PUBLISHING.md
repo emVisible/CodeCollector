@@ -31,6 +31,7 @@ Uses PyPI Trusted Publishing (OIDC) — no secrets stored in GitHub.
    - Workflow filename: `publish.yml`
    - Environment name: `pypi`
 2. Release: create a GitHub *Release* (or run the workflow manually via `workflow_dispatch`).
+   Alternatively: `git tag vX.Y.Z && git push origin vX.Y.Z` triggers the same workflow.
 
 The workflow runs tests, builds, twine-checks, then publishes.
 
