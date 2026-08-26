@@ -1,4 +1,4 @@
-"""Command-line interface for CodeCollector."""
+"""Command-line interface for OnePaste."""
 
 import sys
 from pathlib import Path
@@ -9,13 +9,15 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
 
-from codecollector.config import CollectorConfig, CONFIG_FILE, ensure_config_dir
-from codecollector.collector import FileCollector
-from codecollector.selector import InteractiveSelector
-from codecollector.formatter import OutputFormatter
-from codecollector.splitter import write_collection_output
-from codecollector.output import write_manifest, output_files_exist
-from codecollector.uninstall import uninstall_package
+from onepaste import __version__
+from onepaste.collector import FileCollector
+from onepaste.config import CONFIG_FILE, CollectorConfig, ensure_config_dir
+from onepaste.formatter import OutputFormatter
+from onepaste.output import output_files_exist, write_manifest
+from onepaste.selector import InteractiveSelector
+from onepaste.splitter import write_collection_output
+from onepaste.tokens import count_tokens, method_label
+from onepaste.uninstall import uninstall_package
 
 custom_theme = Theme({
     "info": "cyan",
@@ -29,18 +31,24 @@ custom_theme = Theme({
 })
 
 console = Console(theme=custom_theme)
+# Diagnostics and errors always go to stderr so piped stdout stays clean.
+err_console = Console(file=sys.stderr, theme=custom_theme)
 
 
-class CodeCollectorApp:
-    """Main application class for CodeCollector."""
+class OnePasteApp:
+    """Main application class for OnePaste."""
 
     def __init__(self):
         self.config: Optional[CollectorConfig] = None
         self.collector: Optional[FileCollector] = None
         self.dry_run: bool = False
         self.force: bool = False
+        self.stdout_mode: bool = False
+        # In --stdout mode all human-readable output goes to stderr so the
+        # piped stream stays clean.
+        self.console: Console = console
 
-    def run_interactive(self, filter_mode: bool = False) -> None:
+    def run_interactive(self, filter_mode: Optional[bool] = None) -> None:
         """Run in interactive mode: select directory, then collect immediately."""
         self._print_banner()
 
@@ -51,15 +59,14 @@ class CodeCollectorApp:
             return
 
         console.print(f"\n[success]Collecting:[/success] [path]{selected_path}[/path]")
-        if filter_mode:
-            console.print("[dim]Filter mode: .gitignore enabled[/dim]")
+
+        overrides: dict = {"recursive": True}
+        if filter_mode is not None:
+            overrides["respect_gitignore"] = filter_mode
 
         self.config = CollectorConfig.from_sources(
             root_path=selected_path,
-            overrides={
-                "recursive": True,
-                "respect_gitignore": filter_mode,
-            },
+            overrides=overrides,
         )
 
         self._execute_collection()
@@ -73,32 +80,42 @@ class CodeCollectorApp:
         output_dir: Optional[str] = None,
         config_file: Optional[str] = None,
         exclude_dirs: Optional[List[str]] = None,
-        filter_mode: bool = False,
+        respect_gitignore: Optional[bool] = None,
+        include_patterns: Optional[List[str]] = None,
+        exclude_patterns: Optional[List[str]] = None,
         dry_run: bool = False,
         force: bool = False,
+        stdout_mode: bool = False,
     ) -> None:
         """Run with a specific directory path."""
         target_path = Path(path_str).resolve()
 
         if not target_path.exists():
-            console.print(f"[error]Directory not found: {target_path}[/error]")
+            err_console.print(f"[error]Directory not found: {target_path}[/error]")
             sys.exit(1)
 
         if not target_path.is_dir():
-            console.print(f"[error]Not a directory: {target_path}[/error]")
+            err_console.print(f"[error]Not a directory: {target_path}[/error]")
             sys.exit(1)
 
         overrides: dict = {
             "recursive": recursive,
             "output_file": output_file,
-            "respect_gitignore": filter_mode,
         }
+        # None means "auto": from_sources defaults .gitignore filtering on
+        # inside git work trees.
+        if respect_gitignore is not None:
+            overrides["respect_gitignore"] = respect_gitignore
         if max_output_size_mb is not None:
             overrides["max_output_size_mb"] = max_output_size_mb
         if output_dir is not None:
             overrides["output_dir"] = Path(output_dir)
         if exclude_dirs:
             overrides["extra_exclude_dirs"] = set(exclude_dirs)
+        if include_patterns:
+            overrides["include_patterns"] = list(include_patterns)
+        if exclude_patterns:
+            overrides["exclude_patterns"] = list(exclude_patterns)
 
         self.config = CollectorConfig.from_sources(
             root_path=target_path,
@@ -107,42 +124,39 @@ class CodeCollectorApp:
         )
         self.dry_run = dry_run
         self.force = force
+        self.stdout_mode = stdout_mode
+
+        if stdout_mode:
+            self.console = Console(
+                file=sys.stderr,
+                theme=custom_theme,
+            )
 
         self._execute_collection()
 
     def _execute_collection(self) -> None:
         """Execute the code collection process."""
-        console.print("\n[info]Collecting code files...[/info]")
+        c = self.console
+        filter_state = "on" if self.config.respect_gitignore else "off"
+        c.print("\n[info]Collecting code files...[/info]")
+        c.print(f"[dim].gitignore filter: {filter_state}[/dim]")
 
         self.collector = FileCollector(self.config)
 
-        with console.status("[cyan]Scanning...[/cyan]"):
+        with c.status("[cyan]Scanning...[/cyan]"):
             try:
                 collected_files = self.collector.collect_files()
             except Exception as e:
-                console.print(f"\n[error]Collection error: {e}[/error]")
+                c.print(f"\n[error]Collection error: {e}[/error]")
                 return
 
         if not collected_files:
-            console.print("\n[warning]No matching code files found[/warning]")
+            c.print("\n[warning]No matching code files found[/warning]")
             return
 
         if self.dry_run:
             self._print_dry_run(collected_files)
             return
-
-        output_dir = self.config.output_dir or Path.cwd()
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        if (
-            self.config.auto_increment_output
-            and not self.force
-            and output_files_exist(output_dir, self.config.output_file)
-        ):
-            console.print(
-                f"\n[warning]Output exists:[/warning] [path]{self.config.output_file}[/path] "
-                "[dim](will auto-increment)[/dim]"
-            )
 
         formatter = OutputFormatter()
 
@@ -153,6 +167,23 @@ class CodeCollectorApp:
         summary = formatter.format_summary(
             collected_files, self.collector.skipped_files, self.config
         )
+
+        if self.stdout_mode:
+            self._write_stdout(summary, file_contents, collected_files)
+            return
+
+        output_dir = self.config.output_dir or Path.cwd()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        if (
+            self.config.auto_increment_output
+            and not self.force
+            and output_files_exist(output_dir, self.config.output_file)
+        ):
+            c.print(
+                f"\n[warning]Output exists:[/warning] [path]{self.config.output_file}[/path] "
+                "[dim](will auto-increment)[/dim]"
+            )
 
         output_paths, resolved_name = write_collection_output(
             output_dir,
@@ -165,21 +196,21 @@ class CodeCollectorApp:
         )
 
         if resolved_name != self.config.output_file:
-            console.print(
+            c.print(
                 f"\n[info]Output renamed to avoid overwrite:[/info] "
                 f"[path]{resolved_name}[/path]"
             )
 
         if len(output_paths) == 1:
-            console.print(
+            c.print(
                 f"\n[info]Done:[/info] [path]{output_paths[0]}[/path]"
             )
         else:
-            console.print(
+            c.print(
                 f"\n[info]Done ({len(output_paths)} parts):[/info]"
             )
             for p in output_paths:
-                console.print(f"  [path]{p}[/path]")
+                c.print(f"  [path]{p}[/path]")
 
         manifest_path = None
         if self.config.write_manifest and len(output_paths) > 1:
@@ -190,13 +221,48 @@ class CodeCollectorApp:
                 self.config.root_path,
                 len(collected_files),
             )
-            console.print(f"  [dim]Manifest: {manifest_path.name}[/dim]")
+            c.print(f"  [dim]Manifest: {manifest_path.name}[/dim]")
 
         self._print_results(output_paths, collected_files, manifest_path)
 
+    def _write_stdout(
+        self,
+        summary: str,
+        file_contents: List[str],
+        collected_files: list,
+    ) -> None:
+        """Write collection output to stdout (pipe-friendly).
+
+        Progress and stats go to stderr; splitting is disabled.
+        """
+        c = self.console
+
+        max_bytes = int(self.config.max_output_size_mb * 1024 * 1024)
+        total_bytes = len(summary.encode("utf-8")) + sum(
+            len(part.encode("utf-8")) for part in file_contents
+        )
+        if max_bytes > 0 and total_bytes > max_bytes:
+            c.print(
+                f"[warning]Output is {total_bytes / (1024 * 1024):.1f} MB "
+                f"(> {self.config.max_output_size_mb:g} MB limit); "
+                "--stdout does not split[/warning]"
+            )
+
+        sys.stdout.write(summary + "".join(file_contents))
+        sys.stdout.flush()
+
+        total_tokens = count_tokens(summary) + sum(
+            count_tokens(part) for part in file_contents
+        )
+        c.print(
+            f"\n[success]Done:[/success] {len(collected_files)} files, "
+            f"{total_tokens:,} tokens ({method_label()}) [dim]-> stdout[/dim]"
+        )
+
     def _print_dry_run(self, collected_files: list) -> None:
         """Print dry-run preview without writing output."""
-        console.print("\n[highlight]Dry Run[/highlight] [dim](no files written)[/dim]\n")
+        c = self.console
+        c.print("\n[highlight]Dry Run[/highlight] [dim](no files written)[/dim]\n")
 
         table = Table(title="[bold cyan]Collection Preview[/bold cyan]", show_header=False)
         table.add_column(style="bold cyan", width=20)
@@ -211,23 +277,33 @@ class CodeCollectorApp:
         total_size = sum(fp.stat().st_size for fp in collected_files if fp.exists())
         table.add_row("Estimated size", f"{total_size / 1024:.1f} KB")
         table.add_row("Filter mode", "on" if self.config.respect_gitignore else "off")
+        if self.config.include_patterns:
+            shown = ", ".join(self.config.include_patterns[:3])
+            more = f" (+{len(self.config.include_patterns) - 3})" if len(self.config.include_patterns) > 3 else ""
+            table.add_row("Include patterns", f"{shown}{more}")
+        if self.config.exclude_patterns:
+            shown = ", ".join(self.config.exclude_patterns[:3])
+            more = f" (+{len(self.config.exclude_patterns) - 3})" if len(self.config.exclude_patterns) > 3 else ""
+            table.add_row("Exclude patterns", f"{shown}{more}")
+        if self.stdout_mode:
+            table.add_row("Output", "[path]stdout[/path]")
+        else:
+            output_dir = self.config.output_dir or Path.cwd()
+            table.add_row("Output dir", str(output_dir))
+            table.add_row("Output file", self.config.output_file)
 
-        output_dir = self.config.output_dir or Path.cwd()
-        table.add_row("Output dir", str(output_dir))
-        table.add_row("Output file", self.config.output_file)
-
-        console.print(table)
+        c.print(table)
 
         if self.collector.skipped_files and self.config.show_skipped:
-            console.print("\n[warning]Skipped files (first 10):[/warning]")
+            c.print("\n[warning]Skipped files (first 10):[/warning]")
             for fp, reason in self.collector.skipped_files[:10]:
                 try:
                     rel = fp.relative_to(self.config.root_path)
                 except ValueError:
                     rel = fp
-                console.print(f"  [dim]• {rel}: {reason}[/dim]")
+                c.print(f"  [dim]• {rel}: {reason}[/dim]")
             if len(self.collector.skipped_files) > 10:
-                console.print(f"  [dim]... and {len(self.collector.skipped_files) - 10} more[/dim]")
+                c.print(f"  [dim]... and {len(self.collector.skipped_files) - 10} more[/dim]")
 
     def _print_results(
         self,
@@ -236,7 +312,8 @@ class CodeCollectorApp:
         manifest_path: Optional[Path] = None,
     ) -> None:
         """Print collection results."""
-        console.print()
+        c = self.console
+        c.print()
 
         table = Table(title="[bold cyan]Collection Results[/bold cyan]", show_header=False)
         table.add_column(style="bold cyan", width=20)
@@ -249,12 +326,15 @@ class CodeCollectorApp:
 
         total_lines = 0
         total_size = 0
+        total_tokens = 0
         file_types = set()
 
         for fp in collected_files:
             try:
                 with open(fp, "r", encoding="utf-8") as f:
-                    total_lines += f.read().count("\n") + 1
+                    content = f.read()
+                total_lines += content.count("\n") + 1
+                total_tokens += count_tokens(content)
                 total_size += fp.stat().st_size
                 file_types.add(fp.suffix or "no_ext")
             except Exception:
@@ -262,6 +342,7 @@ class CodeCollectorApp:
 
         table.add_row("Total lines", f"{total_lines:,}")
         table.add_row("Total size", f"{total_size / 1024:.1f} KB")
+        table.add_row("Total tokens", f"{total_tokens:,} [dim]({method_label()})[/dim]")
         table.add_row("File types", str(len(file_types)))
 
         if len(output_paths) == 1:
@@ -273,7 +354,7 @@ class CodeCollectorApp:
             if manifest_path:
                 table.add_row("Manifest", f"[path]{manifest_path.name}[/path]")
 
-        console.print(table)
+        c.print(table)
 
         if len(output_paths) == 1:
             tip = (
@@ -288,7 +369,7 @@ class CodeCollectorApp:
                 f"{paths_text}"
             )
 
-        console.print(Panel(tip, border_style="green"))
+        c.print(Panel(tip, border_style="green"))
 
     @staticmethod
     def _print_banner() -> None:
@@ -296,9 +377,9 @@ class CodeCollectorApp:
         console.print()
         console.print(
             Panel(
-                "[title]CodeCollector[/title]\n"
+                "[title]OnePaste[/title]\n"
                 "[subtitle]Select a directory → Enter → ready for LLM[/subtitle]\n"
-                "[dim]v1.2.0[/dim]",
+                f"[dim]v{__version__}[/dim]",
                 border_style="cyan",
                 padding=(1, 2),
             )
@@ -310,25 +391,29 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="CodeCollector - Collect project code for AI assistants",
+        description="OnePaste - Collect project code for AI assistants",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 Examples:
-  collect                        Select directory interactively, then collect
-  collect -i                       Interactive mode with .gitignore filter
-  collect .                        Collect current directory
-  collect . -i                     Collect with .gitignore filter enabled
+  collect                          Select directory interactively, then collect
+  collect .                        Collect current directory (.gitignore on inside git repos)
+  collect . --no-gitignore         Include gitignored files
   collect /path/to/project         Collect specific directory
   collect . -n                     Non-recursive (current directory only)
   collect . -o output.md           Custom output filename
   collect . --max-output-size 5    Split output when exceeding 5MB per file
+  collect . --stdout | llm "..."   Pipe collection straight into another tool
   collect . --dry-run              Preview without writing output
   collect . --force                Overwrite existing output files
   collect . -d ./output            Write output to specific directory
   collect . --exclude vendor       Extra directory to exclude
+  collect . --include "src/**"     Only include files matching glob (repeatable)
+  collect . --exclude-pattern "*_test.go"   Skip files matching glob (repeatable)
   collect --init-config            Initialize default configuration
-  collect --uninstall              Uninstall codecollector (pipx/pip)
-  collect --uninstall --purge-config  Uninstall and remove ~/.config/codecollector
+  collect --uninstall              Uninstall onepaste (pipx/pip)
+  collect --uninstall --purge-config  Uninstall and remove ~/.config/onepaste
+
+Version: {__version__}
         """,
     )
 
@@ -336,7 +421,13 @@ Examples:
     parser.add_argument(
         "-i",
         action="store_true",
-        help="Enable filter mode (respect .gitignore)",
+        help="Force-enable .gitignore filtering "
+        "(deprecated: enabled by default inside git repos)",
+    )
+    parser.add_argument(
+        "--no-gitignore",
+        action="store_true",
+        help="Disable .gitignore filtering",
     )
     parser.add_argument("-n", "--non-recursive", action="store_true", help="Non-recursive mode")
     parser.add_argument("-o", "--output", type=str, help="Output filename (default: code_collection.md)")
@@ -354,6 +445,25 @@ Examples:
         help="Extra directory to exclude (repeatable)",
     )
     parser.add_argument(
+        "--include",
+        action="append",
+        metavar="GLOB",
+        help="Only include files matching glob, e.g. 'src/**/*.ts' "
+        "(repeatable; overrides extension whitelist)",
+    )
+    parser.add_argument(
+        "--exclude-pattern",
+        dest="exclude_patterns",
+        action="append",
+        metavar="GLOB",
+        help="Exclude files matching glob, e.g. '*.test.ts' (repeatable)",
+    )
+    parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Write the collection to stdout instead of a file (progress goes to stderr)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Preview collection without writing output",
@@ -368,14 +478,14 @@ Examples:
     parser.add_argument(
         "--uninstall",
         action="store_true",
-        help="Uninstall codecollector (via pipx and/or pip)",
+        help="Uninstall onepaste (via pipx and/or pip)",
     )
     parser.add_argument(
         "--purge-config",
         action="store_true",
-        help="Also remove ~/.config/codecollector (use with --uninstall)",
+        help="Also remove ~/.config/onepaste (use with --uninstall)",
     )
-    parser.add_argument("-v", "--version", action="version", version="CodeCollector v1.2.0")
+    parser.add_argument("-v", "--version", action="version", version=f"OnePaste v{__version__}")
 
     args = parser.parse_args()
 
@@ -386,8 +496,35 @@ Examples:
         sys.exit(0 if ok else 1)
 
     if args.purge_config and not args.uninstall:
-        console.print("[error]--purge-config must be used with --uninstall[/error]")
+        err_console.print("[error]--purge-config must be used with --uninstall[/error]")
         sys.exit(2)
+
+    if args.i and args.no_gitignore:
+        err_console.print("[error]-i and --no-gitignore are mutually exclusive[/error]")
+        sys.exit(2)
+
+    if args.stdout:
+        conflicts = [
+            flag
+            for flag, given in (
+                ("-o/--output", args.output),
+                ("-d/--output-dir", args.output_dir),
+                ("--max-output-size", args.max_output_size is not None),
+                ("--force", args.force),
+            )
+            if given
+        ]
+        if conflicts:
+            err_console.print(
+                f"[error]--stdout cannot be combined with: {', '.join(conflicts)}[/error]"
+            )
+            sys.exit(2)
+        if not args.path:
+            err_console.print(
+                "[error]--stdout requires an explicit PATH "
+                "(interactive picker would pollute stdout)[/error]"
+            )
+            sys.exit(2)
 
     ensure_config_dir()
 
@@ -398,10 +535,11 @@ Examples:
         return
 
     try:
-        app = CodeCollectorApp()
+        app = OnePasteApp()
 
         if not args.path and not args.config:
-            app.run_interactive(filter_mode=args.i)
+            respect = True if args.i else (False if args.no_gitignore else None)
+            app.run_interactive(filter_mode=respect)
         else:
             app.run_with_path(
                 path_str=args.path or ".",
@@ -411,15 +549,18 @@ Examples:
                 output_dir=args.output_dir,
                 config_file=args.config,
                 exclude_dirs=args.exclude,
-                filter_mode=args.i,
+                respect_gitignore=True if args.i else (False if args.no_gitignore else None),
+                include_patterns=args.include,
+                exclude_patterns=args.exclude_patterns,
                 dry_run=args.dry_run,
                 force=args.force,
+                stdout_mode=args.stdout,
             )
 
     except KeyboardInterrupt:
-        console.print("\n\n[yellow]Cancelled[/yellow]")
+        err_console.print("\n\n[yellow]Cancelled[/yellow]")
     except Exception as e:
-        console.print(f"\n[error]Error: {e}[/error]")
+        err_console.print(f"\n[error]Error: {e}[/error]")
         sys.exit(1)
 
 

@@ -1,12 +1,13 @@
-"""Configuration management for CodeCollector."""
+"""Configuration management for OnePaste."""
 
+import json
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
-import json
+from typing import Any, Dict, List, Optional, Set
 
+from onepaste.gitignore import is_inside_git_work_tree
 
-CONFIG_DIR = Path.home() / ".config" / "codecollector"
+CONFIG_DIR = Path.home() / ".config" / "onepaste"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
@@ -67,6 +68,9 @@ class CollectorConfig:
     show_progress: bool = True
     show_skipped: bool = True
 
+    include_patterns: List[str] = field(default_factory=list)
+    exclude_patterns: List[str] = field(default_factory=list)
+
     @property
     def all_exclude_dirs(self) -> Set[str]:
         return self.exclude_dirs | self.extra_exclude_dirs
@@ -102,7 +106,11 @@ class CollectorConfig:
         config_file: Optional[str] = None,
         overrides: Optional[Dict[str, Any]] = None,
     ) -> "CollectorConfig":
-        """Build config by merging global config, file config, and CLI overrides."""
+        """Build config by merging global config, file config, and CLI overrides.
+
+        When no source specifies `respect_gitignore`, it defaults to on inside
+        git work trees and off elsewhere.
+        """
         merged: Dict[str, Any] = {}
 
         if CONFIG_FILE.exists():
@@ -121,6 +129,9 @@ class CollectorConfig:
                     else:
                         merged[key] = value
 
+        if "respect_gitignore" not in merged:
+            merged["respect_gitignore"] = is_inside_git_work_tree(root_path)
+
         return cls(**cls._normalize_dict(merged))
 
     def save_to_file(self, filepath: str) -> None:
@@ -133,6 +144,8 @@ class CollectorConfig:
             "max_output_size_mb": self.max_output_size_mb,
             "auto_increment_output": self.auto_increment_output,
             "write_manifest": self.write_manifest,
+            "include_patterns": sorted(self.include_patterns),
+            "exclude_patterns": sorted(self.exclude_patterns),
         }
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(config_dict, f, indent=2)

@@ -1,0 +1,42 @@
+/* ── design tokens ─────────────────────────────────────────── */
+
+:root {
+  /* light = paper */
+  --bg: #faf6ec;
+  --bg-raised: #fffef8;
+  --bg-dim: #f1ebdd;
+  --ink: #17150f;
+  --ink-dim: rgba(23, 21, 15, 0.55);
+  --ink-faint: rgba(23, 21, 15, 0.32);
+  --line: rgba(23, 21, 15, 0.14);
+  --marker: #d8f34e;
+  --marker-wash: rgba(216, 243, 78, 0.28);
+  --marker-ink: #23260a;
+  --shadow: 0 1px 0 rgba(23, 21, 15, 0.06), 0 8px 28px rgba(23, 21, 15, 0.07);
+
+  --font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", monospace;
+
+  --fs-hero: clamp(2.6rem, 7vw, 5.4rem);
+  --fs-h2: clamp(1.15rem, 2.6vw, 1.7rem);
+  --fs-body: 0.95rem;
+  --fs-code: 0.84rem;
+
+  --content-max: 74ch;
+  --sidebar-w: 230px;
+  --ease-sweep: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #131109;
+  --bg-raised: #1c1912;
+  --bg-dim: #211d13;
+  --ink: #ede9dc;
+  --ink-dim: rgba(237, 233, 220, 0.55);
+  --ink-faint: rgba(237, 233, 220, 0.3);
+  --line: rgba(237, 233, 220, 0.16);
+  --marker: #d8f34e;
+  --marker-wash: rgba(216, 243, 78, 0.14);
+  --marker-ink: #1a1d05;
+  --shadow: none;
+}

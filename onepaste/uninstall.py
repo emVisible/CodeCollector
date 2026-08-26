@@ -6,10 +6,9 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from codecollector.config import CONFIG_DIR
+from onepaste.config import CONFIG_DIR
 
-
-PACKAGE_NAME = "codecollector"
+PACKAGE_NAME = "onepaste"
 
 
 def _run(cmd: List[str]) -> Tuple[int, str]:
@@ -61,7 +60,7 @@ def remove_config_dir() -> Optional[Path]:
 
 
 def uninstall_package(purge_config: bool = False) -> Tuple[bool, List[str]]:
-    """Uninstall codecollector via pipx and/or pip.
+    """Uninstall onepaste via pipx and/or pip.
 
     Returns (success, messages).
     """

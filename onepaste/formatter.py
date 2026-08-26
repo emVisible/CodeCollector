@@ -1,14 +1,28 @@
 """Output formatter module."""
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
-from codecollector.config import CollectorConfig
+from onepaste.config import CollectorConfig
+from onepaste.tokens import count_tokens, method_label
+
+_FENCE_RUN_RE = re.compile(r"`{3,}")
+_TOP_TOKEN_FILES = 10
 
 
 class OutputFormatter:
     """Formats collected code files into LLM-ready Markdown."""
+
+    @staticmethod
+    def fence_marker(content: str) -> str:
+        """Return a backtick fence long enough to safely wrap the content."""
+        longest = max(
+            (len(m.group(0)) for m in _FENCE_RUN_RE.finditer(content)),
+            default=0,
+        )
+        return "`" * max(3, longest + 1)
 
     @staticmethod
     def format_file_content(file_path: Path, relative_to: Path) -> str:
@@ -22,13 +36,16 @@ class OutputFormatter:
 
             line_count = content.count("\n") + 1
             file_size = file_path.stat().st_size
+            tokens = count_tokens(content)
+            fence = OutputFormatter.fence_marker(content)
 
             return (
                 f"### `{relative_path}`\n\n"
-                f"**Lines:** {line_count} | **Size:** {file_size:,} bytes\n\n"
-                f"```{lang}\n"
+                f"**Lines:** {line_count} | **Size:** {file_size:,} bytes "
+                f"| **Tokens:** {tokens:,}\n\n"
+                f"{fence}{lang}\n"
                 f"{content}\n"
-                f"```\n\n"
+                f"{fence}\n\n"
             )
         except Exception as e:
             return f"### `{relative_path}`\n\n**Read Error:** {e}\n\n"
@@ -44,16 +61,22 @@ class OutputFormatter:
 
         total_lines = 0
         total_size = 0
+        total_tokens = 0
+        file_tokens: List[Tuple[Path, int]] = []
         for fp in collected_files:
             try:
                 with open(fp, encoding="utf-8") as f:
-                    total_lines += f.read().count("\n") + 1
+                    content = f.read()
+                total_lines += content.count("\n") + 1
                 total_size += fp.stat().st_size
+                tokens = count_tokens(content)
+                total_tokens += tokens
+                file_tokens.append((fp, tokens))
             except Exception:
-                pass
+                file_tokens.append((fp, 0))
 
         summary = [
-            "# CodeCollector - Collection Summary",
+            "# OnePaste - Collection Summary",
             "",
             f"**Generated:** {now}  ",
             f"**Root:** `{config.root_path.absolute()}`  ",
@@ -68,7 +91,24 @@ class OutputFormatter:
             f"**Files collected:** {len(collected_files)}  ",
             f"**Total lines:** {total_lines:,}  ",
             f"**Total size:** {total_size / 1024:.1f} KB  ",
+            f"**Total tokens:** {total_tokens:,} *({method_label()})*  ",
         ])
+
+        if collected_files:
+            summary.extend([
+                "",
+                "## Top Files by Tokens",
+                "",
+                "| File | Tokens |",
+                "| --- | ---: |",
+            ])
+            top_files = sorted(file_tokens, key=lambda x: x[1], reverse=True)
+            for fp, tokens in top_files[:_TOP_TOKEN_FILES]:
+                try:
+                    rel_path = fp.relative_to(config.root_path).as_posix()
+                except ValueError:
+                    rel_path = str(fp)
+                summary.append(f"| `{rel_path}` | {tokens:,} |")
 
         if skipped_files:
             summary.append("")

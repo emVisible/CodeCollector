@@ -1,4 +1,8 @@
-# CodeCollector
+# OnePaste
+
+[![PyPI](https://img.shields.io/pypi/v/onepaste)](https://pypi.org/project/onepaste/)
+[![Python](https://img.shields.io/pypi/pyversions/onepaste)](https://pypi.org/project/onepaste/)
+[![License](https://img.shields.io/pypi/l/onepaste)](LICENSE)
 
 Collect project code into LLM-ready Markdown. Select a directory, press Enter, copy and paste.
 
@@ -9,11 +13,19 @@ Collect project code into LLM-ready Markdown. Select a directory, press Enter, c
 ```bash
 brew install pipx
 pipx ensurepath
+pipx install onepaste
+
+# Optional: exact token counting via tiktoken
+pipx install "onepaste[tokens]"
 ```
 
+Without the `tokens` extra, token counts use a fast characters/4 estimate.
+
+### From source (for development)
+
 ```bash
-git clone https://github.com/emVisible/codecollector.git
-cd codecollector
+git clone https://github.com/emVisible/onepaste.git
+cd onepaste
 pipx install -e .
 ```
 
@@ -21,13 +33,13 @@ pipx install -e .
 
 ```bash
 # Uninstall package
-collect --uninstall
+onepaste --uninstall
 
-# Uninstall and remove ~/.config/codecollector
-collect --uninstall --purge-config
+# Uninstall and remove ~/.config/onepaste
+onepaste --uninstall --purge-config
 
 # Reinstall editable from local source
-cd /path/to/CodeCollector
+cd /path/to/OnePaste
 pipx install -e .
 ```
 
@@ -35,13 +47,16 @@ pipx install -e .
 
 ```bash
 # Interactive: navigate to folder → select "Collect this directory" → Enter
-collect
+onepaste
 
-# Collect current directory
-collect .
+# Collect current directory (.gitignore filtering on automatically inside git repos)
+onepaste .
 
-# Enable filter mode (respect .gitignore)
-collect . -i
+# Pipe straight into another tool — no file written
+onepaste . --stdout | llm "Explain what this project does"
+
+# Only TypeScript sources, skip tests
+onepaste . --include "src/**/*.ts" --exclude-pattern "*.test.ts"
 ```
 
 Output is a single Markdown file (`code_collection.md`) ready to copy-paste into any LLM.
@@ -50,56 +65,93 @@ Output is a single Markdown file (`code_collection.md`) ready to copy-paste into
 
 ```bash
 # Interactive mode
-collect
-collect -i                    # with .gitignore filter
+onepaste
+onepaste -i                    # force .gitignore filter (deprecated: auto inside git)
 
 # Collect a specific directory
-collect /path/to/project
-collect . -i                  # with filter mode
+onepaste /path/to/project
+onepaste . --no-gitignore      # include gitignored files too
 
 # Non-recursive (current directory only)
-collect . -n
+onepaste . -n
 
 # Custom output
-collect . -o my_project.md
-collect . -d ./collected
+onepaste . -o my_project.md
+onepaste . -d ./collected
+
+# Glob filtering (repeatable)
+onepaste . --include "src/**"
+onepaste . --include "*.py" --include "*.md"
+onepaste . --exclude-pattern "*.min.js" --exclude-pattern "tests/*"
 
 # Split large output (default: 2MB per part)
-collect . --max-output-size 5
+onepaste . --max-output-size 5
 
 # Preview without writing
-collect . --dry-run
+onepaste . --dry-run
 
 # Extra exclusions
-collect . --exclude vendor --exclude tmp
+onepaste . --exclude vendor --exclude tmp
 ```
 
 ## Options
 
-| Option                 | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `path`                 | Directory to collect (default: interactive picker)               |
-| `-i`                   | Enable filter mode — respect `.gitignore`                        |
-| `-n, --non-recursive`  | Only current directory, skip subdirectories                      |
-| `-o, --output`         | Output filename (default: `code_collection.md`)                  |
-| `-d, --output-dir`     | Output directory (default: current working directory)            |
-| `--max-output-size MB` | Max output size per file; auto-split when exceeded (default: 2)  |
-| `--exclude DIR`        | Extra directory to exclude (repeatable)                          |
-| `--dry-run`            | Preview collection without writing output                        |
-| `--force`              | Overwrite existing output instead of auto-incrementing           |
-| `--config`             | Path to config file (merged with global config)                  |
-| `--init-config`        | Generate default config at `~/.config/codecollector/config.json` |
-| `--uninstall`          | Uninstall codecollector via pipx and/or pip                      |
-| `--purge-config`       | Also remove `~/.config/codecollector` (with `--uninstall`)       |
-| `-v, --version`        | Show version                                                     |
-| `-h, --help`           | Show help                                                        |
+| Option                       | Description                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
+| `path`                       | Directory to onepaste (default: interactive picker)                                 |
+| `-i`                         | Force-enable `.gitignore` filtering (deprecated alias; see below)                  |
+| `--no-gitignore`             | Disable `.gitignore` filtering                                                     |
+| `-n, --non-recursive`        | Only current directory, skip subdirectories                                        |
+| `-o, --output`               | Output filename (default: `code_collection.md`)                                    |
+| `-d, --output-dir`           | Output directory (default: current working directory)                              |
+| `--max-output-size MB`       | Max output size per file; auto-split when exceeded (default: 2)                    |
+| `--exclude DIR`              | Extra directory to exclude (repeatable)                                            |
+| `--include GLOB`             | Only onepaste files matching glob (repeatable; overrides extension whitelist)       |
+| `--exclude-pattern GLOB`     | Skip files matching glob (repeatable)                                              |
+| `--stdout`                   | Write collection to stdout; progress goes to stderr; no file written               |
+| `--dry-run`                  | Preview collection without writing output                                          |
+| `--force`                    | Overwrite existing output instead of auto-incrementing                             |
+| `--config`                   | Path to config file (merged with global config)                                    |
+| `--init-config`              | Generate default config at `~/.config/onepaste/config.json`                   |
+| `--uninstall`                | Uninstall onepaste via pipx and/or pip                                        |
+| `--purge-config`             | Also remove `~/.config/onepaste` (with `--uninstall`)                         |
+| `-v, --version`              | Show version                                                                       |
+| `-h, --help`                 | Show help                                                                          |
+
+### .gitignore defaults
+
+Inside a git work tree, `.gitignore` filtering is **on by default**. Outside git repos it is off.
+Explicit flags win over the default: `-i` forces it on, `--no-gitignore` forces it off.
+(`-i` used to be required to enable filtering; it still works but the default has changed.)
+
+### Glob patterns
+
+`--include` / `--exclude-pattern` match against paths relative to the collected root using
+[fnmatch](https://docs.python.org/3/library/fnmatch.html) semantics:
+
+| Pattern          | Matches                                             |
+| ---------------- | --------------------------------------------------- |
+| `*.py`           | any `.py` file anywhere                             |
+| `src/**`         | everything under `src/`                             |
+| `tests/*`        | files directly inside `tests/`                      |
+| `*_test.go`      | Go test files anywhere                              |
+
+When `--include` patterns are given they **replace** the extension whitelist — you get exactly
+the matched files (still respecting excludes, size limits and binary detection).
+
+### Token counting
+
+Summaries show total tokens plus per-file counts, with a Top-10 table of the largest files.
+With the optional `tokens` extra installed, counts are exact (`tiktoken`, `o200k_base`);
+otherwise an estimate (~4 chars/token) is shown and labelled as such.
 
 ## Output Format
 
 All output is **detailed Markdown** optimized for LLM consumption:
 
-- Summary with metadata, directory tree, and file list
-- Each source file as a `###` heading with line count, size, and fenced code block
+- Summary with metadata, token totals, top files by tokens, directory tree, and file list
+- Each source file as a `###` heading with line count, size, tokens, and a fenced code block
+  (fences auto-lengthen so source containing backticks never breaks rendering)
 - Auto-split into parts for large projects, each with `Part X of N` header
 
 ## Output Behavior
@@ -114,13 +166,17 @@ Use `--force` to overwrite.
 
 When output exceeds the size limit, files are split at source-file boundaries. A manifest JSON is written alongside multi-part output.
 
+`--stdout` never splits; it warns on stderr if the limit would have been exceeded.
+It also requires an explicit `path` — the interactive picker would otherwise mix its
+own output into the piped stream.
+
 ## Configuration
 
 ```bash
-collect --init-config
+onepaste --init-config
 ```
 
-Edit `~/.config/codecollector/config.json`:
+Edit `~/.config/onepaste/config.json`:
 
 ```json
 {
@@ -133,12 +189,18 @@ Edit `~/.config/codecollector/config.json`:
     "build"
   ],
   "include_extensions": [".py", ".js", ".ts", ".go", ".rs", ".java"],
+  "include_patterns": [],
+  "exclude_patterns": [],
   "max_file_size_mb": 5.0,
   "max_output_size_mb": 2.0,
   "auto_increment_output": true,
   "write_manifest": true
 }
 ```
+
+`.gitignore` filtering is intentionally not stored in the config file — it resolves
+automatically per run (on inside git work trees) unless overridden by `-i` or
+`--no-gitignore`.
 
 ## Requirements
 

@@ -1,0 +1,702 @@
+/* ── global chrome ─────────────────────────────────────────── */
+
+.progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 70;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--marker);
+}
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.1rem;
+  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.brand-cursor {
+  animation: blink 1.1s steps(1) infinite;
+  color: var(--ink-dim);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ruler {
+  position: fixed;
+  left: 0.9rem;
+  top: 50%;
+  translate: 0 -50%;
+  writing-mode: vertical-rl;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  user-select: none;
+  z-index: 40;
+}
+
+@media (max-width: 1279px) {
+  .ruler {
+    display: none;
+  }
+}
+
+/* ── shell layout: tree sidebar + content ──────────────────── */
+
+.shell {
+  max-width: calc(var(--content-max) + var(--sidebar-w) + 10rem);
+  margin: 0 auto;
+  padding: 4.2rem 1.4rem 0;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding-top: 3.6rem;
+  }
+
+  .tree {
+    position: sticky;
+    top: 3.1rem;
+    z-index: 30;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(6px);
+    padding-bottom: 0.6rem;
+    margin-top: -0.6rem;
+  }
+
+  .tree ul {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.15rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .tree li::before {
+    content: none !important;
+  }
+
+  .tree a {
+    white-space: nowrap;
+    font-size: 0.72rem;
+  }
+
+  .tree-title {
+    display: none;
+  }
+}
+
+.tree-title {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin: 0 0 0.4rem;
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: sticky;
+  top: 4.6rem;
+}
+
+.tree li a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  padding: 0.05em 0.45em;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.tree li a::before {
+  content: "\251c\2500\2500  ";
+  color: var(--ink-faint);
+}
+
+.tree li:last-child a::before {
+  content: "\2514\2500\2500  ";
+}
+
+.tree li a:hover {
+  color: var(--ink);
+}
+
+.tree li a.is-active {
+  background: var(--marker);
+  color: var(--marker-ink);
+}
+
+/* ── hero terminal ─────────────────────────────────────────── */
+
+.hero {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  position: relative;
+}
+
+.term {
+  width: min(640px, 100%);
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
+}
+
+.term-line {
+  margin: 0 0 0.8em;
+}
+
+.prompt {
+  color: var(--ink-faint);
+}
+
+.caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.15em;
+  vertical-align: text-bottom;
+  background: var(--marker);
+  animation: blink 1s steps(1) infinite;
+}
+
+.spinner {
+  display: inline-block;
+  margin-left: 0.6em;
+  color: var(--ink-dim);
+}
+
+.term-out p {
+  margin: 0.35em 0;
+}
+
+.t-dim,
+.dim {
+  color: var(--ink-dim);
+}
+
+.t-ok {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.arrow {
+  color: var(--marker);
+  font-weight: 700;
+  -webkit-text-stroke: 0.4px var(--ink);
+}
+
+.t-hint {
+  color: var(--ink-faint);
+  font-size: 0.85em;
+  margin-top: 1.4em !important;
+}
+
+.scroll-cue {
+  position: absolute;
+  bottom: 2.2rem;
+  font-size: 1.3rem;
+  text-decoration: none;
+  color: var(--ink-dim);
+  opacity: 0;
+  translate: 0 8px;
+  transition: opacity 0.5s ease, translate 0.5s ease, color 0.15s ease;
+}
+
+.hero.is-done .scroll-cue {
+  opacity: 1;
+  translate: 0 0;
+  animation: bob 2.2s ease-in-out infinite;
+}
+
+.scroll-cue:hover {
+  color: var(--ink);
+}
+
+@keyframes bob {
+  50% {
+    translate: 0 6px;
+  }
+}
+
+/* JS animates these in; without JS they simply stay visible */
+.hero.anim .term-out p {
+  visibility: hidden;
+}
+
+.hero.anim .term-out p.is-shown {
+  visibility: visible;
+}
+
+/* ── file sections ─────────────────────────────────────────── */
+
+main {
+  display: block;
+}
+
+.file-section {
+  padding: clamp(4rem, 9vh, 7rem) 0;
+  border-top: 1px dashed var(--line);
+}
+
+.file-heading {
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  margin: 0 0 1.4rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.file-heading .fh-name::before {
+  content: "## ";
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.fh-tag {
+  font-size: 0.62em;
+  font-weight: 400;
+  color: var(--marker-ink);
+  background: var(--marker);
+  border-radius: 99px;
+  padding: 0.15em 0.75em;
+  translate: 0 -0.2em;
+}
+
+.blurb {
+  color: var(--ink-dim);
+  margin: -0.6rem 0 1.6rem;
+  max-width: 58ch;
+}
+
+.headline {
+  font-size: var(--fs-hero);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin: 0 0 1.6rem;
+}
+
+.sub {
+  color: var(--ink-dim);
+  max-width: 56ch;
+  margin: 0 0 2.6rem;
+}
+
+/* summary metadata table */
+.meta-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+}
+
+.meta-table th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--ink-dim);
+  padding: 0.55em 1.4em 0.55em 0;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.meta-table td {
+  padding: 0.55em 0;
+  border-bottom: 1px dashed var(--line);
+  width: 100%;
+}
+
+.meta-table tr:first-child th {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* code blocks */
+.code {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.1rem 1.3rem;
+  font-size: var(--fs-code);
+  line-height: 1.8;
+  overflow-x: auto;
+  box-shadow: var(--shadow);
+}
+
+.code code {
+  font-family: inherit;
+}
+
+.cmt {
+  color: var(--ink-faint);
+}
+
+.kw {
+  color: var(--ink-faint);
+}
+
+.str {
+  color: var(--ink);
+  background: var(--marker-wash);
+  border-radius: 3px;
+  padding: 0 0.2em;
+}
+
+.fn {
+  font-weight: 700;
+}
+
+.key {
+  color: var(--ink-dim);
+}
+
+a.link {
+  text-decoration-color: var(--marker);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* diff */
+.diff .add {
+  display: block;
+  position: relative;
+  padding: 0.08em 0.5em;
+  border-radius: 4px;
+}
+
+.diff .sign {
+  color: var(--ink-faint);
+  margin-right: 0.35em;
+}
+
+.diff .add::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--marker-wash);
+  border-radius: 4px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s var(--ease-sweep);
+  z-index: -1;
+}
+
+.diff .add:hover::after,
+.diff .add.is-swept::after {
+  transform: scaleX(1);
+}
+
+.diff .add:hover .sign {
+  color: var(--marker-ink);
+}
+/* ── demo section ──────────────────────────────────────────── */
+
+.demo-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .demo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pane-label {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin: 0 0 0.6rem;
+}
+
+.file-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.file-tree li {
+  margin: 0.15em 0;
+}
+
+.file-tree label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55em;
+  cursor: pointer;
+  padding: 0.12em 0.3em;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.file-tree label:hover {
+  background: var(--marker-wash);
+}
+
+.file-tree input[type="checkbox"] {
+  appearance: none;
+  width: 1em;
+  height: 1em;
+  border: 1px solid var(--ink-dim);
+  border-radius: 3px;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  translate: 0 0.14em;
+}
+
+.file-tree input:checked {
+  background: var(--marker);
+  border-color: var(--marker);
+}
+
+.file-tree input:checked::after {
+  content: "x";
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--marker-ink);
+}
+
+.file-tree .fpath {
+  overflow-wrap: anywhere;
+}
+
+.file-tree li.is-excluded label {
+  color: var(--ink-faint);
+}
+
+.file-tree li.is-excluded .fpath {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+}
+
+.file-tree .reason {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.warn-chip {
+  color: #8a4a00;
+  background: rgba(255, 176, 32, 0.18);
+  border-radius: 6px;
+  padding: 0.45em 0.8em;
+  font-size: 0.76rem;
+  margin: 0.8rem 0 0;
+}
+
+[data-theme="dark"] .warn-chip {
+  color: #ffc46b;
+}
+
+.demo-stats {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.2rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.tok-count b {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview {
+  min-height: 300px;
+  max-height: 480px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+}
+
+.preview code {
+  white-space: pre-wrap;
+}
+
+/* ── install ───────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.tab-caption {
+  color: var(--ink-dim);
+  font-size: 0.82rem;
+  margin: 0 0 0.55rem;
+  min-height: 1.4em;
+}
+
+.cmd-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: stretch;
+}
+
+.cmd-row .code.inline {
+  flex: 1;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.cmd-row .copy-btn {
+  align-self: center;
+}
+
+.footnote {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-top: 1rem;
+}
+
+/* ── manifest footer ───────────────────────────────────────── */
+
+.manifest {
+  max-width: calc(var(--content-max) + 6rem);
+  margin: 0 auto;
+  padding: 3rem 1.4rem 6.5rem;
+  border-top: 1px dashed var(--line);
+}
+
+.colophon {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-top: 1.2rem;
+}
+
+/* ── floating token counter ────────────────────────────────── */
+
+.token-counter {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 45;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.4em 1em;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.token-counter b {
+  color: var(--ink);
+  font-size: 1em;
+}
+
+/* ── easter egg overlay ────────────────────────────────────── */
+
+.egg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.egg-overlay.is-on {
+  opacity: 1;
+}
+
+.egg-box {
+  text-align: center;
+  transform: scale(0.6);
+  transition: transform 0.45s var(--ease-sweep);
+}
+
+.egg-overlay.is-on .egg-box {
+  transform: scale(1);
+}
+
+.egg-lid {
+  font-size: clamp(4rem, 14vw, 8rem);
+  line-height: 1;
+  display: block;
+  color: var(--ink);
+}
+
+.egg-msg {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 1rem 0 0;
+}
+
+body.egg-fly .file-section,
+body.egg-fly .hero,
+body.egg-fly .manifest {
+  animation: fly-in 0.55s var(--ease-sweep) both;
+}
+
+@keyframes fly-in {
+  from {
+    transform: translate(38vw, -30vh) scale(0.05) rotate(8deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

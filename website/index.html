@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OnePaste — Your whole codebase. One paste.</title>
+  <meta name="description" content="Pack any directory into a single LLM-ready Markdown file. Select a folder, press Enter, paste. Runs locally." />
+  <meta property="og:title" content="OnePaste — Your whole codebase. One paste." />
+  <meta property="og:description" content="Select a folder, press Enter, paste it into your LLM. Local-first, zero upload." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+  <div class="ruler" aria-hidden="true"><span id="rulerText">L 0000 / 0000</span></div>
+
+  <header class="topbar">
+    <a class="brand" href="#hero">onepaste<span class="brand-cursor">_</span></a>
+    <div class="controls">
+      <button id="langToggle" class="chip-btn" type="button">中文</button>
+      <button id="themeToggle" class="chip-btn" type="button" aria-label="Toggle dark mode">[&#9789;]</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="tree" aria-label="Sections">
+      <p class="tree-title">./website</p>
+      <ul id="treeNav">
+        <li><a href="#summary"># Summary</a></li>
+        <li><a href="#how">./how_it_works.py</a></li>
+        <li><a href="#demo">./demo.sh</a></li>
+        <li><a href="#changelog">./changelog.diff</a></li>
+        <li><a href="#install">./install.sh</a></li>
+      </ul>
+    </nav>
+
+    <main id="content">
+
+      <section class="hero" id="hero">
+        <div class="term" aria-live="polite">
+          <p class="term-line"><span class="prompt">$</span> <span id="typedCmd"></span><span class="caret" aria-hidden="true"></span></p>
+          <div class="term-out" id="termOut">
+            <p class="t-dim">Scanning...</p>
+            <p class="t-dim">.gitignore filter: on</p>
+            <p class="t-ok">Done: <span id="statFiles">6</span> files, <span id="statTokens">0</span> tokens <span class="arrow">&#8594;</span> stdout</p>
+            <p class="t-hint" data-i18n="hero.hint">&#9660; you are reading the output</p>
+          </div>
+        </div>
+        <a class="scroll-cue" href="#summary" aria-label="Scroll to content">&#8595;</a>
+      </section>
+
+      <section class="file-section" id="summary">
+        <h1 class="headline" data-i18n="sum.headline">Your whole codebase.<br />One&nbsp;paste.</h1>
+        <p class="sub" data-i18n="sum.sub">
+          OnePaste packs any directory into a single Markdown file your LLM can actually read.
+          No account. No upload. It never leaves your machine.
+        </p>
+        <table class="meta-table" aria-label="Collection summary">
+          <tbody>
+            <tr><th># OnePaste &mdash; Collection Summary</th><td></td></tr>
+            <tr><th>Generated</th><td id="metaGenerated">&mdash;</td></tr>
+            <tr><th>Version</th><td>v1.3.0</td></tr>
+            <tr><th>License</th><td>MIT</td></tr>
+            <tr><th>Requires</th><td>Python &#8805; 3.8</td></tr>
+            <tr><th>Runtime deps</th><td>rich &middot; questionary</td></tr>
+            <tr><th>Telemetry</th><td class="marker-text" data-i18n="sum.telemetry">none. it can't phone home.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="file-section" id="how">
+        <h2 class="file-heading"><span class="fh-name">./how_it_works.py</span></h2>
+        <pre class="code" id="howCode"><code><span class="cmt" data-i18n="how.c1"># 1. point it at a folder</span>
+<span class="kw">$</span> onepaste ~/my-project
+
+<span class="cmt" data-i18n="how.c2"># 2. press Enter &#8212; files are weighed in tokens,</span>
+<span class="cmt" data-i18n="how.c3">#    gitignored junk stays out, big outputs split</span>
+
+<span class="cmt" data-i18n="how.c4"># 3. paste one file into any LLM</span>
+<span class="fn">chat.send</span>(<span class="str">code_collection.md</span>)</code></pre>
+      </section>
+
+      <section class="file-section" id="demo">
+        <h2 class="file-heading"><span class="fh-name">./demo.sh</span><span class="fh-tag" data-i18n="demo.liveTag">live &mdash; runs in your browser</span></h2>
+        <p class="blurb" data-i18n="demo.blurb">A miniature repo, the real formatting rules. Toggle files, watch tokens move, copy the result.</p>
+
+        <div class="demo-presets" role="group" aria-label="Presets">
+          <button class="chip-btn preset is-active" data-preset="default" type="button"><code>onepaste .</code></button>
+          <button class="chip-btn preset" data-preset="all" type="button"><code>--no-gitignore</code></button>
+          <button class="chip-btn preset" data-preset="src" type="button"><code>--include "src/**"</code></button>
+        </div>
+
+        <div class="demo-grid">
+          <div class="demo-left">
+            <p class="pane-label">mini-repo/ <span id="filterState" class="dim">&middot; .gitignore on</span></p>
+            <ul class="file-tree" id="fileTree"></ul>
+            <p class="warn-chip" id="envWarn" hidden><span aria-hidden="true">&#9888;</span> <span data-i18n="demo.envWarn">.env looks sensitive &mdash; usually kept out</span></p>
+          </div>
+          <div class="demo-right">
+            <div class="demo-stats">
+              <span class="tok-count"><b id="demoTokens">0</b> <span data-i18n="demo.tokUnit">tok</span></span>
+              <span class="dim" id="demoFiles">0 files &middot; 0 lines</span>
+            </div>
+            <pre class="code preview" id="demoPreview" tabindex="0" aria-label="Generated markdown preview"><code></code></pre>
+            <button class="copy-btn big" id="demoCopy" type="button" data-i18n="demo.copy">Copy output</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="file-section" id="changelog">
+        <h2 class="file-heading"><span class="fh-name">./v1.3.0.diff</span></h2>
+        <pre class="code diff" id="diffBlock"><code><span class="add"><span class="sign">+</span> <span data-i18n="diff.l1">.gitignore filtering defaults ON inside git repos</span></span>
+<span class="add"><span class="sign">+</span> <span data-i18n="diff.l2">--stdout pipes straight into other tools</span></span>
+<span class="add"><span class="sign">+</span> <span data-i18n="diff.l3">exact token counting (tiktoken) with estimate fallback</span></span>
+<span class="add"><span class="sign">+</span> <span data-i18n="diff.l4">--include / --exclude-pattern glob filters</span></span>
+<span class="add"><span class="sign">+</span> <span data-i18n="diff.l5">code fences auto-lengthen around nested backticks</span></span>
+<span class="add"><span class="sign">+</span> <span data-i18n="diff.l6">now on PyPI &#8212; pipx install onepaste</span></span></code></pre>
+      </section>
+
+      <section class="file-section" id="install">
+        <h2 class="file-heading"><span class="fh-name">./install.sh</span></h2>
+        <div class="tabs" role="tablist" aria-label="Install methods">
+          <button class="chip-btn tab is-active" role="tab" aria-selected="true" data-tab="pipx" type="button">pipx</button>
+          <button class="chip-btn tab" role="tab" aria-selected="false" data-tab="tokens" type="button">+tokens</button>
+          <button class="chip-btn tab" role="tab" aria-selected="false" data-tab="source" type="button">source</button>
+        </div>
+        <div class="install-pane">
+          <p class="tab-caption" id="tabCaption"></p>
+          <div class="cmd-row">
+            <pre class="code inline" id="installCmd"><code></code></pre>
+            <button class="copy-btn" id="installCopy" type="button" data-i18n="common.copy">Copy</button>
+          </div>
+        </div>
+        <p class="footnote" data-i18n="install.note">Local-only by design: nothing is uploaded, ever.</p>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="manifest" id="manifest">
+    <pre class="code"><code>{
+  <span class="key">"name"</span>: <span class="str">"onepaste"</span>,
+  <span class="key">"version"</span>: <span class="str">"1.3.0"</span>,
+  <span class="key">"repository"</span>: <a class="str link" href="https://github.com/emVisible/onepaste" target="_blank" rel="noopener">"github.com/emVisible/onepaste"</a>,
+  <span class="key">"license"</span>: <span class="str">"MIT"</span>,
+  <span class="key">"this_page"</span>: {
+    <span class="key">"files"</span>: <span id="pageFiles">6</span>,
+    <span class="key">"tokens"</span>: <span id="pageTokens">0</span>,
+    <span class="key">"method"</span>: <span class="str">"chars/4 estimate"</span>
+  },
+  <span class="key">"collected_by"</span>: <span class="str">"$ onepaste website/ --stdout"</span>
+}</code></pre>
+    <p class="colophon" data-i18n="footer.colophon">This website is itself a onepaste output &mdash; hand-built, static, zero runtime libraries.</p>
+  </footer>
+
+  <div class="token-counter" id="tokenCounter" aria-hidden="true">&#931; <b id="counterValue">0</b> tok</div>
+  <div class="toast-region" id="toasts" aria-live="polite"></div>
+  <div class="egg-overlay" id="eggOverlay" hidden>
+    <div class="egg-box" aria-hidden="true">
+      <span class="egg-lid">&#9633;</span>
+      <p class="egg-msg" data-i18n="egg.msg">collected.</p>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

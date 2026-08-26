@@ -1,12 +1,13 @@
 """File collector module."""
 
+import fnmatch
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
-from codecollector.config import CollectorConfig
-from codecollector.gitignore import GitignoreMatcher, list_git_visible_files
+from onepaste.config import CollectorConfig
+from onepaste.gitignore import GitignoreMatcher, list_git_visible_files
 
 # Own outputs should never be re-collected (prevents runaway growth).
 _OUTPUT_ARTIFACT_RE = re.compile(
@@ -84,6 +85,19 @@ class FileCollector:
             return False
 
         file_name = file_path.name
+        rel_posix = self._relative_posix(file_path)
+
+        if self.config.exclude_patterns and self._matches_any(
+            rel_posix, self.config.exclude_patterns
+        ):
+            self.skipped_files.append((file_path, "excluded by pattern"))
+            return False
+
+        if self.config.include_patterns:
+            # --include overrides the extension whitelist (repomix-style).
+            if self._matches_any(rel_posix, self.config.include_patterns):
+                return self._is_text_file(file_path)
+            return False
 
         if file_name in self.config.special_files:
             return self._is_text_file(file_path)
@@ -97,6 +111,25 @@ class FileCollector:
                 if ext.startswith(".") and file_name.endswith(ext.lstrip(".")):
                     return self._is_text_file(file_path)
 
+        return False
+
+    def _relative_posix(self, file_path: Path) -> str:
+        try:
+            return file_path.relative_to(self.config.root_path).as_posix()
+        except ValueError:
+            return file_path.name
+
+    @staticmethod
+    def _matches_any(rel_posix: str, patterns: Iterable[str]) -> bool:
+        name = Path(rel_posix).name
+        for pattern in patterns:
+            if pattern.endswith("/"):
+                base = pattern.rstrip("/")
+                if rel_posix.startswith(base + "/") or f"/{base}/" in f"/{rel_posix}":
+                    return True
+                continue
+            if fnmatch.fnmatch(rel_posix, pattern) or fnmatch.fnmatch(name, pattern):
+                return True
         return False
 
     def _is_text_file(self, file_path: Path) -> bool:

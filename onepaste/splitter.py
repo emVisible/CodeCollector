@@ -3,12 +3,12 @@
 from pathlib import Path
 from typing import List, Tuple
 
-from codecollector.config import CollectorConfig
-from codecollector.output import resolve_unique_filename
+from onepaste.config import CollectorConfig
+from onepaste.output import resolve_unique_filename
 
 HEADER_SIZE_BUFFER = 512
 ESTIMATED_PART_HEADER = (
-    "# CodeCollector - Part 999 of 999\n\n"
+    "# OnePaste - Part 999 of 999\n\n"
     f"- **Root:** `{'x' * 60}`\n"
     "- **Files in this part:** 999\n"
     + "\n".join(f"  - `{'x' * 60}`" for _ in range(10))
@@ -33,7 +33,7 @@ def format_part_header(
 ) -> str:
     """Format the header for a split output file."""
     lines = [
-        f"# CodeCollector - Part {part} of {total}",
+        f"# OnePaste - Part {part} of {total}",
         "",
     ]
 

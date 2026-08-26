@@ -7,8 +7,8 @@ from typing import Optional
 import questionary
 from rich.console import Console
 from rich.panel import Panel
-from rich.theme import Theme
 from rich.text import Text
+from rich.theme import Theme
 
 custom_theme = Theme({
     "info": "cyan",
@@ -48,7 +48,7 @@ class InteractiveSelector:
 
             console.print()
             console.print(Panel.fit(
-                "[bold cyan]CodeCollector[/bold cyan] [dim]- Select directory, press Enter to collect[/dim]",
+                "[bold cyan]OnePaste[/bold cyan] [dim]- Select directory, press Enter to collect[/dim]",
                 border_style="cyan",
             ))
 

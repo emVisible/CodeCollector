@@ -113,11 +113,11 @@ class GitignoreMatcher:
         return False
 
 
-def list_git_visible_files(root: Path) -> Optional[Set[Path]]:
-    """Return files that are tracked or untracked-but-not-ignored.
+def is_inside_git_work_tree(root: Path) -> bool:
+    """Return True if root is inside a git working tree.
 
-    Uses `git ls-files -co --exclude-standard`. Returns None if git is
-    unavailable or root is not inside a git work tree.
+    Fast probe used for the default-on .gitignore behaviour. Returns False
+    when git is unavailable or root is not inside a work tree.
     """
     root = root.resolve()
     try:
@@ -128,9 +128,19 @@ def list_git_visible_files(root: Path) -> Optional[Set[Path]]:
             check=False,
         )
     except FileNotFoundError:
-        return None
+        return False
 
-    if probe.returncode != 0 or probe.stdout.strip() != "true":
+    return probe.returncode == 0 and probe.stdout.strip() == "true"
+
+
+def list_git_visible_files(root: Path) -> Optional[Set[Path]]:
+    """Return files that are tracked or untracked-but-not-ignored.
+
+    Uses `git ls-files -co --exclude-standard`. Returns None if git is
+    unavailable or root is not inside a git work tree.
+    """
+    root = root.resolve()
+    if not is_inside_git_work_tree(root):
         return None
 
     result = subprocess.run(

@@ -132,6 +132,9 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# ruff
+.ruff_cache/
+
 # Pyre type checker
 .pyre/
 
@@ -287,6 +290,10 @@ credentials.json
 secrets.json
 .env.local
 .env.production
+
+# --- Website ---
+website/node_modules/
+website/dist/
 
 # --- Misc ---
 # CodeCollector 自身的输出

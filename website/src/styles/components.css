@@ -1,0 +1,112 @@
+/* ── reusable components ───────────────────────────────────── */
+
+/* small square-ish chip buttons (lang / theme / presets / tabs) */
+.chip-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.28em 0.7em;
+  cursor: pointer;
+  color: var(--ink-dim);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.chip-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+.chip-btn.is-active {
+  background: var(--marker);
+  border-color: var(--marker);
+  color: var(--marker-ink);
+}
+
+.chip-btn code {
+  font: inherit;
+}
+
+/* copy buttons */
+.copy-btn {
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 0.32em 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s var(--ease-sweep), box-shadow 0.12s ease;
+}
+
+.copy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.copy-btn:active {
+  transform: translateY(0);
+}
+
+.copy-btn.big {
+  width: 100%;
+  padding: 0.55em;
+  margin-top: 0.7rem;
+  background: var(--marker);
+  border-color: var(--marker);
+  color: var(--marker-ink);
+  font-weight: 700;
+}
+
+/* toast */
+.toast-region {
+  position: fixed;
+  bottom: 4.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--marker);
+  color: var(--marker-ink);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.42em 1em;
+  border-radius: 99px;
+  opacity: 0;
+  translate: 0 10px;
+  animation: toast-in 2.4s var(--ease-sweep) forwards;
+  white-space: nowrap;
+}
+
+@keyframes toast-in {
+  8% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  82% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+/* marker-highlighted inline text */
+.marker-text,
+mark.hl {
+  background: linear-gradient(
+    to right,
+    var(--marker-wash),
+    var(--marker-wash)
+  );
+  padding: 0.08em 0.18em;
+  border-radius: 3px;
+}
